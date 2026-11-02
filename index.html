@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arrow Escape</title>
+<script>
+  // Supabase sends the password-reset email link to this page (the "Site URL").
+  // If the link carries reset data, forward it to the reset page.
+  (function () {
+    var h = location.hash || '';
+    if (h.indexOf('type=recovery') > -1 || h.indexOf('error=') > -1 || h.indexOf('access_token=') > -1) {
+      location.replace('reset.html' + h);
+    }
+  })();
+</script>
+<style>
+  :root{--ink:#0f1535;--mid:#4a5278;--bg:#ffffff;--soft:#f1f3fb}
+  @media (prefers-color-scheme:dark){:root{--ink:#f1f3fb;--mid:#a9b4e6;--bg:#0f1535;--soft:#1c2347}}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center}
+  .w{max-width:420px}
+  svg{width:84px;height:84px;fill:currentColor}
+  h1{margin:10px 0 6px;font-size:34px}
+  p{color:var(--mid);line-height:1.6;margin:8px 0}
+  a{display:inline-block;margin:6px 4px;padding:12px 18px;border-radius:14px;background:var(--soft);color:var(--ink);font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="w">
+  <svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13h-13L12 6.5z"/></svg>
+  <h1>Arrow Escape</h1>
+  <p>A simple and addictive puzzle game. Slide the arrows out of the board without hitting anything.</p>
+  <p>Play it on your Android phone.</p>
+  <a href="privacy-policy.html">Privacy Policy</a>
+</div>
+</body>
+</html>

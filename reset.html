@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Reset password - Arrow Escape</title>
+<style>
+  :root{--ink:#0f1535;--soft:#f1f3fb;--mid:#4a5278;--accent:#0f1535;--err:#e11d48;--ok:#16a34a;--bg:#ffffff;--card:#ffffff}
+  @media (prefers-color-scheme:dark){:root{--ink:#f1f3fb;--soft:#1c2347;--mid:#a9b4e6;--accent:#7c8cff;--bg:#0f1535;--card:#161d40}}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .card{width:100%;max-width:400px;background:var(--card);border-radius:24px;padding:28px 22px;box-shadow:0 10px 40px rgba(15,21,53,.15);display:flex;flex-direction:column;gap:14px}
+  .logo{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:800;font-size:22px}
+  .logo svg{width:34px;height:34px;fill:currentColor}
+  h1{margin:0;font-size:24px;text-align:center}
+  p{margin:0;color:var(--mid);font-size:15px;line-height:1.5;text-align:center}
+  input[type=password],input[type=text]{width:100%;padding:15px 16px;border-radius:14px;border:2px solid transparent;background:var(--soft);color:var(--ink);font-size:16px;outline:none}
+  input:focus{border-color:var(--accent)}
+  label.show{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mid)}
+  button{width:100%;padding:16px;border:0;border-radius:16px;background:var(--accent);color:var(--bg);font-size:17px;font-weight:800;cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  .msg{min-height:20px;font-size:14px;font-weight:700;text-align:center}
+  .err{color:var(--err)} .ok{color:var(--ok)}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2zm0 4.5l6.5 13h-13L12 6.5z"/></svg>Arrow Escape</div>
+
+  <div id="v-check"><p>Checking your link...</p></div>
+
+  <div id="v-form" class="hide" style="display:none;flex-direction:column;gap:14px">
+    <h1>Set a new password</h1>
+    <p>Choose a new password for your Arrow Escape account.</p>
+    <input id="pw1" type="password" placeholder="New password (min 6 characters)" autocomplete="new-password">
+    <input id="pw2" type="password" placeholder="Confirm new password" autocomplete="new-password">
+    <label class="show"><input id="show" type="checkbox"> Show passwords</label>
+    <div id="msg" class="msg err"></div>
+    <button id="go">Change password</button>
+  </div>
+
+  <div id="v-done" class="hide" style="display:none;flex-direction:column;gap:14px">
+    <h1>Password changed</h1>
+    <p class="ok" style="font-weight:700">Done! Your password has been updated.</p>
+    <p>Now open the Arrow Escape app and log in with your new password.</p>
+  </div>
+
+  <div id="v-bad" class="hide" style="display:none;flex-direction:column;gap:14px">
+    <h1>Link not valid</h1>
+    <p>This reset link is invalid or has expired (links work for a short time and only once).</p>
+    <p>Open the Arrow Escape app, tap <b>Forgot password?</b> and request a new link.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var SUPABASE_URL = 'https://ipsbygnvmajwixoolbjc.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_jxmKBfxkl7GB9e6k-n2eOg_cc-ubNak';   // public key, safe here
+  var $ = function (id) { return document.getElementById(id); };
+  function show(id) { ['v-check', 'v-form', 'v-done', 'v-bad'].forEach(function (v) { var e = $(v); e.style.display = (v === id) ? 'flex' : 'none'; }); }
+
+  var params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  var token = params.get('access_token'), type = params.get('type');
+  // remove the token from the address bar so it is not kept in history
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+
+  if (!token || type !== 'recovery' || params.get('error')) { show('v-bad'); return; }
+  show('v-form');
+
+  $('show').onchange = function () { var t = this.checked ? 'text' : 'password'; $('pw1').type = t; $('pw2').type = t; };
+
+  $('go').onclick = function () {
+    var a = $('pw1').value, b = $('pw2').value, msg = $('msg'), btn = $('go');
+    msg.className = 'msg err'; msg.textContent = '';
+    if (a.length < 6) { msg.textContent = 'Password must be at least 6 characters'; return; }
+    if (a !== b) { msg.textContent = 'Passwords do not match'; return; }
+    btn.disabled = true; btn.textContent = 'Please wait...';
+    fetch(SUPABASE_URL + '/auth/v1/user', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ password: a })
+    }).then(function (r) {
+      return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} return { ok: r.ok, status: r.status, j: j }; });
+    }).then(function (res) {
+      if (res.ok) { show('v-done'); return; }
+      var m = (res.j && (res.j.msg || res.j.message || res.j.error_description)) || '';
+      if (/different from the old/i.test(m) || (res.j && res.j.error_code === 'same_password')) msg.textContent = 'Please choose a password different from your old one';
+      else if (res.status === 401 || res.status === 403) { show('v-bad'); return; }
+      else msg.textContent = m || ('Something went wrong (' + res.status + '), please try again');
+      btn.disabled = false; btn.textContent = 'Change password';
+    }).catch(function () {
+      msg.textContent = 'No internet connection, please try again';
+      btn.disabled = false; btn.textContent = 'Change password';
+    });
+  };
+})();
+</script>
+</body>
+</html>
